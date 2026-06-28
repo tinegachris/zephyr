@@ -14,7 +14,7 @@
 	compatible = "bliiot,am62x-m4-bl350", "ti,am625";
 
 	chosen {
-		zephyr,sram       = &ddr1;
+		zephyr,sram       = &ddr0;
 		zephyr,flash      = &ddr0;
 		zephyr,console    = &uart0;
 		zephyr,shell-uart = &uart0;
@@ -22,20 +22,15 @@
 		zephyr,ipc        = &ipc0;
 	};
 
-	rsc_table: memory@9cc00000 {
+	ddr0: memory@9cc00000 {
+		compatible = "mmio-sram";
+		reg = <0x9cc00000 0x1f0000>;
+	};
+
+	rsc_table: memory@9cdf0000 {
 		compatible = "zephyr,memory-region", "mmio-sram";
-		reg = <0x9cc00000 DT_SIZE_K(4)>;
+		reg = <0x9cdf0000 DT_SIZE_K(4)>;
 		zephyr,memory-region = "RSC_TABLE";
-	};
-
-	ddr0: memory@9cc01000 {
-		compatible = "mmio-sram";
-		reg = <0x9cc01000 (DT_SIZE_M(1) - DT_SIZE_K(4))>;
-	};
-
-	ddr1: memory@9cd00000 {
-		compatible = "mmio-sram";
-		reg = <0x9cd00000 DT_SIZE_M(1)>;
 	};
 
 	reserved-memory {
@@ -45,12 +40,12 @@
 
 		ipc_carveout: ipc@9cb00000 {
 			compatible = "shared-dma-pool";
-			reg = <0x9Cb00000 0x48000>; /* 288 KB */
+			reg = <0x9cb00000 0x48000>; /* 288 KB */
 			no-map;
 		};
 
-		m4f-trace@9cc00000 {
-			reg = <0x9CC00000 0x100000>; /* 1 MB */
+		m4f-trace@9ce00000 {
+			reg = <0x9ce00000 0x100000>; /* 1 MB */
 			no-map;
 		};
 	};
@@ -107,7 +102,7 @@
 	current-speed = <115200>;
 	pinctrl-0 = <&mcu_uart0_rx_default &mcu_uart0_tx_default>;
 	pinctrl-names = "default";
-	status = "okay";
+	status = "disabled";
 };
 
 &main_uart0 {
