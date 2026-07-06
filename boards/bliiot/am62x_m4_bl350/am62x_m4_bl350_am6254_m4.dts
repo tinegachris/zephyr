@@ -1,0 +1,164 @@
+/*
+ * Copyright (c) 2026 Chrispine Tinega <dev@chrispinetinega.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <ti/am62x_m4.dtsi>
+#include "am62x_m4_bl350_am6254_m4-pinctrl.dtsi"
+#include <zephyr/dt-bindings/memory-attr/memory-attr-arm.h>
+
+/ {
+	model = "BL352BW-SOM353-X25-Y24-Y31";
+	compatible = "bliiot,am62x-m4-bl350", "ti,am625";
+
+	aliases {
+		uart1 = &main_uart1;
+		uart2 = &main_uart2;
+		gpio1 = &main_gpio1;
+	};
+
+	chosen {
+		/*
+		 * AM62x M4 runs from the m4f-memory carveout that Linux reserves
+		 * at 0x9cc00000. We treat this as unified SRAM for Zephyr, with
+		 * XIP disabled so flash and sram share the same region.
+		 */
+		zephyr,sram       = &m4f_mem;
+		zephyr,flash      = &m4f_mem;
+		zephyr,console    = &uart0;
+		zephyr,shell-uart = &uart0;
+
+		/*
+		 * RTOS IPC shared memory is provided by the ipc-memories@9c800000
+		 * reserved region that Linux remoteproc and TI IPC stack use.
+		 */
+		zephyr,ipc_shm    = &ipc_shm;
+		zephyr,ipc        = &ipc0;
+	};
+
+	/*
+	 * M4F program region: matches Linux reserved-memory m4f-memory@9cc00000
+	 * (reg = <0x00 0x9cc00000 0x00 0xe00000>). We expose a subset of that
+	 * as Zephyr's unified SRAM/flash region. Adjust the size as needed
+	 * for your final image layout, but keep it within the 14 MB carveout.
+	 */
+	m4f_mem: memory@9cc00000 {
+		compatible = "mmio-sram";
+		reg = <0x9cc00000 0x0e00000>; /* 14 MB: full m4f-memory carveout */
+	};
+
+	reserved-memory {
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+
+		/*
+		 * Resource table lives in the m4f-dma-memory@9cb00000 region
+		 * that Linux remoteproc uses for virtio1. Keep it small and
+		 * non-cacheable.
+		 */
+		rsc_table: memory@9cbf0000 {
+			compatible = "zephyr,memory-region", "mmio-sram";
+			reg = <0x9cbf0000 DT_SIZE_K(4)>;
+			zephyr,memory-region = "RSC_TABLE";
+			zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE) )>;
+		};
+
+		/*
+		 * Zephyr/OpenAMP vrings and SHM buffer region. This must reside
+		 * inside the m4f-dma-memory@9cb00000 (reg = <0x00 0x9cb00000 0x00 0x100000>)
+		 * reserved by Linux for remoteproc DMA.
+		 */
+		ipc_shm: ipc@9cb00000 {
+			compatible = "shared-dma-pool";
+			reg = <0x9cb00000 0x00100000>; /* 1 MB: full m4f-dma-memory */
+			no-map;
+			zephyr,memory-attr = <( DT_MEM_ARM(ATTR_MPU_RAM_NOCACHE) )>;
+		};
+
+		/* Optional trace buffer in the m4f-memory region. */
+		m4f-trace@9ce00000 {
+			reg = <0x9ce00000 0x00100000>; /* 1 MB */
+			no-map;
+		};
+	};
+
+	/*
+	 * IPC transport: match upstream SK-AM62/Verbin M4 boards by using
+	 * the Zephyr mailbox IPM driver instead of static-vrings. The FIFO
+	 * indices correspond to the mbox-m4-0 endpoint in Linux, which
+	 * uses FIFO 0 for the M4 side.
+	 */
+	ipc0: ipc {
+		compatible = "zephyr,ipc-openamp-static-vrings";
+		mboxes = <&mbox0 0>, <&mbox0 1>;
+		mbox-names = "tx", "rx";
+		role = "remote";
+		memory-region = <&ipc_shm>;
+		status = "okay";
+	};
+
+	soc {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges;
+	};
+};
+
+&uart0 {
+	current-speed = <115200>;
+	pinctrl-0 = <&mcu_uart0_rx_default &mcu_uart0_tx_default>;
+	pinctrl-names = "default";
+	status = "okay";
+};
+
+&main_uart0 {
+	current-speed = <115200>;
+	status = "okay";
+	interrupts = <20 0>;
+	interrupt-parent = <&nvic>;
+
+	modbus0: modbus0 {
+		compatible = "zephyr,modbus-serial";
+		status = "okay";
+	};
+};
+
+&main_uart5 {
+	current-speed = <115200>;
+	status = "okay";
+	interrupts = <21 0>;
+	interrupt-parent = <&nvic>;
+};
+
+&mbox0 {
+	status = "okay";
+};
+
+/* Provide standard labels expected by the BL350 board application overlay */
+
+&main_uart1 {
+	status = "okay";
+	interrupts = <22 0>;
+	interrupt-parent = <&nvic>;
+};
+
+&main_uart2 {
+	status = "okay";
+	interrupts = <23 0>;
+	interrupt-parent = <&nvic>;
+};
+
+&main_gpio1 {
+	status = "okay";
+	interrupts = <24 0>;
+	interrupt-parent = <&nvic>;
+};
+
+&mcu_rti0 {
+	status = "okay";
+};

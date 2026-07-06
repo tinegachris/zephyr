@@ -1,0 +1,30 @@
+# Copyright (c) 2026 Chrispine Tinega <dev@chrispinetinega.com>
+# SPDX-License-Identifier: Apache-2.0
+
+# Platform Configuration
+CONFIG_CORTEX_M_SYSTICK=y
+
+# Zephyr Kernel Configuration
+# (XIP is disabled at the SoC level)
+
+# Clock Driver
+CONFIG_CLOCK_CONTROL=y
+
+# IPC Subsystem
+CONFIG_IPC_SERVICE=y
+CONFIG_MBOX=y
+CONFIG_OPENAMP=y
+
+# Serial Driver
+CONFIG_SERIAL=y
+
+# Enable Console
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+
+
+# Peripherals
+CONFIG_CAN=y
+CONFIG_CAN_FD_MODE=y
+CONFIG_GPIO=y
+CONFIG_WATCHDOG=y

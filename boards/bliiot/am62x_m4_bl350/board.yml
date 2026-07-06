@@ -1,0 +1,6 @@
+board:
+  name: am62x_m4_bl350
+  full_name: BLIIoT BL352BW (AM625 M4 on SK-AM62)
+  vendor: bliiot
+  socs:
+  - name: am6254
